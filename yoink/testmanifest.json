@@ -1,0 +1,6 @@
+{
+  "Name": "Test Package",
+  "Description": "Foo bar",
+  "ImageUrl": "https://dummyjson.com/icon/abc123/150",
+  "Versions": []
+}
