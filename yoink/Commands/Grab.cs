@@ -1,9 +1,6 @@
 ﻿using AbysmalCore.Console;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Spectre.Console;
+using System.Diagnostics.Tracing;
 
 namespace yoink.Commands
 {
@@ -18,21 +15,74 @@ namespace yoink.Commands
                 (" <package>", ConsoleColor.Blue, null)
             ]); _c.WriteLn();
             _c.WriteColorLn("   gets a package manifest from the provided manifest destination (url/yoink repo) at begins install process", ConsoleColor.White);
-
-            _c.WriteLn();
-
-            _c.WriteColorLn("appliccable flags: ", ConsoleColor.Yellow);
-            _c.WriteColorLns([
-                ("  -q | -quiet                      installs the package with minimal prompting and display (use flags to minimize)", ConsoleColor.White, null),
-                ("  -l:<dir> | -location:<dir>       sets the install location", ConsoleColor.White, null),
-                ("  -v:<*.*.*> | -version:<*.*.*>    installs a specific version of a package", ConsoleColor.White, null),
-            ]);
         }
 
-        public static async void Invoke(ArgumentParser p, bool quiet)
+        public static void Invoke(string[] args)
         {
-            string package = p.Arguments[1];
-            Manifest manifest = new("https://dummyjson.com/recipes");
+            string pkgName = args[1];
+
+            Manifest manifest = new(pkgName);
+            manifest.Display();
+
+            string reccomendedVer;
+            try { reccomendedVer = manifest.Versions.First(v => v.Reccomended).Version; }
+            catch { reccomendedVer = "none"; }
+
+            string latestPkgVer = manifest.Versions.Last().Version;
+            string selectedVer = AnsiConsole.Prompt(new TextPrompt<string>("package version to grab").DefaultValue($"reccomended: {reccomendedVer}, latest: {latestPkgVer}"));
+
+            Package pkg;
+            if (manifest.GetVersion(selectedVer.Trim()) == null)
+            {
+                _c.WriteColorLn("invalid package version!", ConsoleColor.Red);
+                return;
+            }
+            else pkg = (Package)manifest.GetVersion(selectedVer.Trim())!;
+
+            void loop()
+            {
+                _c.WriteLn();
+                pkg.Display(titleCol: ConsoleColor.Yellow, expanded: true);
+                _c.WriteLn();
+
+                string[] options = ["change install dest", "grab", "restore", "cancel"];
+                string option = AnsiConsole.Prompt(new SelectionPrompt<string>().AddChoices(options));
+                if (option == options[0])
+                {
+                    string dest = AnsiConsole.Prompt(new TextPrompt<string>("new install dest:"));
+                    pkg.DefaultInstallPath = dest;
+
+                    _c.Clear();
+                    loop();
+                }
+                else if (option == options[2])
+                {
+                    pkg = (Package)manifest.GetVersion(selectedVer.Trim())!;
+                    _c.Clear();
+                    loop();
+                }
+                else if (option == options[3]) return;
+            }
+            loop();
+
+            bool confirmed = AnsiConsole.Prompt(new ConfirmationPrompt("grab this package? make sure you trust it"));
+            if (!confirmed) return;
+
+            AnsiConsole.Progress()
+            .Start(ctx =>
+            {
+                List<ProgressTask> tasks = new();
+                foreach (File f in pkg.Files) tasks.Add(ctx.AddTask($"{f.Name} [blue]downloading from[/] {f.DownloadUrl} [blue]to[/] {Path.GetFullPath(Path.Combine(pkg.DefaultInstallPath, f.RelativeLocation))}"));
+
+                while (!ctx.IsFinished)
+                {
+                    foreach (ProgressTask task in tasks)
+                    {
+                        task.Increment(task.MaxValue);
+                    }
+                }
+            });
+
         }
     }
 }

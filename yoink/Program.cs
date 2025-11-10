@@ -11,7 +11,7 @@ internal class Program
         AbysmalDebug.Enabled = false;
 
 #if DEBUG
-        args = ["grab", "yoink"];
+        args = ["grab", "yoink.tests.dummy1 -l:C"];
 #endif
 
         if (args.Length < 2)
@@ -19,13 +19,12 @@ internal class Program
             _c.WriteColorLn("usage: ", ConsoleColor.Yellow);
             _c.WriteColors([
                 ("  yoink", ConsoleColor.Blue, null),
-                (" <grab | drop | up | help> <package | command>", ConsoleColor.White, null),
-                (" [...]", ConsoleColor.DarkGray, null)
+                (" <grab | drop | up | help> <package | command>", ConsoleColor.White, null)
             ]); _c.WriteLn();
 
             _c.WriteLn();
 
-            _c.WriteColorLn("args: ", ConsoleColor.Yellow);
+            _c.WriteColorLn("commands: ", ConsoleColor.Yellow);
             _c.WriteColorLns([
                 ("  grab    gets a package", ConsoleColor.Green, null),
                 ("  drop    uninstalls a package", ConsoleColor.Red, null),
@@ -33,30 +32,18 @@ internal class Program
                 ("  help    tells you what yoink does", ConsoleColor.Magenta, null),
             ]); _c.WriteLn();
 
-            _c.WriteColorLn("flags: ", ConsoleColor.Yellow);
-            _c.WriteColorLns([
-                ("  -q | -quiet                      installs the package with minimal prompting and display (use flags to minimize)", ConsoleColor.White, null),
-                ("  -l:<dir> | -location:<dir>       sets the install location", ConsoleColor.White, null),
-                ("  -v:<*.*.*> | -version:<*.*.*>    installs a specific version of a package", ConsoleColor.White, null),
-            ]);
-
             return;
         }
 
-        ArgumentParser p = new(args, 2);
-        string command = p.Arguments[0];
-        string packageOrCmd = p.Arguments[1];
+        args = args.Select(a => a.Contains("yoink.tests.dummy1") ? "https://dummyjson.com/c/0d09-2e89-4469-89fa" : a).ToArray();
 
-        bool quiet = p.HasFlag("q")
-        | p.HasFlag("quiet");
-
-        switch (command)
+        switch (args[0])
         {
             case "help":
-                yoink.Commands.Help.Invoke(p, quiet);
+                yoink.Commands.Help.Invoke(args);
                 break;
             case "grab":
-                yoink.Commands.Grab.Invoke(p, quiet);
+                yoink.Commands.Grab.Invoke(args);
                 break;
         }
     }

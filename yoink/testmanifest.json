@@ -2,5 +2,43 @@
   "Name": "Test Package",
   "Description": "Foo bar",
   "ImageUrl": "https://dummyjson.com/icon/abc123/150",
-  "Versions": []
+  "Versions": [
+    {
+      "Version": "1.2.3",
+      "Description": "Foo bar",
+      "DefaultInstallPath": "C:",
+      "Reccomended": true,
+      "EntryFile": "Installer.exe",
+      "Files": [
+        {
+          "Name": "file1",
+          "RelativeLocation": "/some/folder",
+          "DownloadUrl": "google.com"
+        },
+        {
+          "Name": "file2",
+          "RelativeLocation": "/some/folder",
+          "DownloadUrl": "google.com"
+        }
+      ]
+    },
+    {
+      "Version": "4.2.0",
+      "Description": "Baz",
+      "DefaultInstallPath": "X:",
+      "EntryFile": "Uninstaller.exe",
+      "Files": [
+        {
+          "Name": "file1",
+          "RelativeLocation": "/some/folder",
+          "DownloadUrl": "google.com"
+        },
+        {
+          "Name": "file2",
+          "RelativeLocation": "/some/folder",
+          "DownloadUrl": "google.com"
+        }
+      ]
+    }
+  ]
 }
