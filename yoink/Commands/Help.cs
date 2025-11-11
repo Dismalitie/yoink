@@ -1,4 +1,4 @@
-﻿using AbysmalCore.Console;
+﻿using Spectre.Console;
 
 namespace yoink.Commands
 {
@@ -14,7 +14,7 @@ namespace yoink.Commands
                     Grab.Help();
                     break;
                 case "help":
-                    Program._c.WriteLn("Really? It's pretty self-explanatory.");
+                    AnsiConsole.MarkupLine("[red]really? its pretty self-explanatory[/]");
                     break;
             }
         }

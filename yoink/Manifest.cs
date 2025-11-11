@@ -1,43 +1,41 @@
-﻿using AbysmalCore;
-using AbysmalCore.Console;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Spectre.Console;
 
 namespace yoink
 {
     internal struct Manifest
     {
-        private static AbysmalConsole _c = Program._c;
         public Manifest(string url)
         {
-            _c.Write($"grabbing manifest from {url}");
+            AnsiConsole.Markup($"grabbing manifest from {url}");
             HttpClient hc = new();
             string json = hc.GetStringAsync(url).Result;
             this = JsonConvert.DeserializeObject<Manifest>(json);
-            _c.WriteColorLn(" [done]", ConsoleColor.Green);
+            AnsiConsole.MarkupLine(" [green][[done]][/]");
 
             if (ImageUrl != null)
             {
-                _c.Write("grabbing thumbnail");
+                AnsiConsole.Markup($"grabbing thumbnail");
                 Stream s = hc.GetStreamAsync(ImageUrl).Result;
-                _c.WriteColorLn(" [done]", ConsoleColor.Green);
+                AnsiConsole.MarkupLine(" [green][[done]][/]");
 
                 LocalImgPath = Path.GetTempFileName();
                 FileStream fs = new(LocalImgPath, FileMode.Create, FileAccess.Write);
                 s.CopyTo(fs);
 
-                fs.Flush();
                 s.Dispose();
                 fs.Dispose();
             }
+
+            hc.Dispose();
         }
 
-        public string Name = "unknown";
-        public string Description = "no description";
-        public string? ImageUrl = null;
-        [JsonIgnore] public string? LocalImgPath = null;
+        [JsonProperty("name")]      public string Name = "unknown";
+        [JsonProperty("desc")]      public string Description = "no description";
+        [JsonProperty("thumbnail")] public string? ImageUrl = null;
+        [JsonIgnore]                public string? LocalImgPath = null;
 
-        public Package[] Versions;
+        [JsonProperty("vers")] public Package[] Versions;
 
         public void Display()
         {
@@ -48,19 +46,16 @@ namespace yoink
                 AnsiConsole.Write(image);
             }
 
-            _c.WriteColorLns([
-                ($"name:", ConsoleColor.Yellow, null),
-                ($"  {Name}", ConsoleColor.White, null),
-                ($"description:", ConsoleColor.Yellow, null),
-                ($"  {Description}", ConsoleColor.White, null),
-            ]);
+            AnsiConsole.MarkupLine($"[yellow]name:[/]");
+            AnsiConsole.MarkupLine($"  {Name}");
+            AnsiConsole.MarkupLine($"[yellow]description:[/]");
+            AnsiConsole.MarkupLine($"  {Description}");
 
-            _c.WriteColor($"version(s): ", ConsoleColor.Yellow);
-            _c.WriteLn(Versions.Length.ToString());
+            AnsiConsole.MarkupLine($"[yellow]version(s):[/] {Versions.Length}");
             foreach (Package p in Versions)
             {
                 p.Display("  ", latest: Versions.Last().Version == p.Version);
-                _c.WriteLn();
+                AnsiConsole.WriteLine();
             }
         }
 
@@ -73,63 +68,57 @@ namespace yoink
 
     internal struct File
     {
-        public string Name;
-        public string RelativeLocation;
-        public string DownloadUrl;
+        public File() { }
+        [JsonProperty("name")]     public string Name = "file";
+        [JsonProperty("path")]     public string RelativeLocation;
+        [JsonProperty("url")]      public string DownloadUrl;
+        [JsonProperty("critical")] public bool Critical = false;
+
+        public void Download(string path)
+        {
+            HttpClient hc = new();
+            byte[] data = hc.GetByteArrayAsync(DownloadUrl).Result;
+            FileStream fs = new(path, FileMode.Create, FileAccess.Write);
+            fs.Write(data, 0, data.Length);
+            fs.Flush();
+            fs.Dispose();
+            hc.Dispose();
+        }
     }
 
     internal struct Package
     {
-        private static AbysmalConsole _c = Program._c;
-        public Package()
-        {
-            
-        }
+        public Package() { }
 
-        public string Version = "unknown";
-        public bool Reccomended = false;
-        public string Description = "no description";
-        public string DefaultInstallPath;
-        public string EntryFile;
+        [JsonProperty("ver")]            public string Version = "unknown";
+        [JsonProperty("recommended")]    public bool Recommended = false;
+        [JsonProperty("desc")]           public string Description = "no description";
+        [JsonProperty("root")]           public string RootInstallPath;
+        [JsonProperty("postInstallCmd")] public string PostInstallCmd;
 
-        public File[] Files = [];
+        [JsonProperty("files")] public File[] Files = [];
 
         public void Display(string indent = "", bool expanded = false, ConsoleColor titleCol = ConsoleColor.Blue, bool latest = false)
         {
-            _c.WriteColor($"{indent}version: ", titleCol);
-            if (Reccomended)
-            {
-                _c.WriteColors([
-                    (Version, ConsoleColor.White, null),
-                    (" (recommended)\n", ConsoleColor.Green, null),
-                ]);
-            }
-            else if (latest)
-            {
-                _c.WriteColors([
-                    (Version, ConsoleColor.White, null),
-                    (" (latest)\n", ConsoleColor.Yellow, null),
-                ]);
-            }
-            else _c.WriteLn(Version);
+            string tCol = Color.FromConsoleColor(titleCol).ToMarkup();
 
-            _c.WriteColor($"{indent}description: ", titleCol);
-            _c.WriteLn(Description);
-            _c.WriteColor($"{indent}file(s): ", titleCol);
-            _c.WriteLn(Files.Length.ToString());
+            AnsiConsole.MarkupLine($"[{tCol}]{indent}version:[/]");
+            if (Recommended) AnsiConsole.MarkupLine($"{indent}  {Version} [green](recommended)[/]");
+            else if (latest) AnsiConsole.MarkupLine($"{indent}  {Version} [yellow](latest)[/]");
+            else AnsiConsole.MarkupLine($"{indent}  {Version}");
+
+            AnsiConsole.MarkupLine($"[{tCol}]{indent}description:[/]");
+            AnsiConsole.MarkupLine($"{indent}  {Description}");
+            AnsiConsole.MarkupLine($"{indent}[{tCol}]files:[/] {Files.Length}");
 
             if (expanded)
             {
-                foreach (File f in Files)
-                {
-                    _c.WriteColor($"{indent}  file ", ConsoleColor.Blue);
-                    _c.WriteLn(f.Name);
-                }
+                foreach (File f in Files) AnsiConsole.MarkupLine($"{indent}  [blue]file[/] {f.Name}");
 
-                _c.WriteColor($"{indent}installs to: ", titleCol);
-                _c.WriteLn(DefaultInstallPath);
-                _c.WriteColor($"{indent}installation executable: ", titleCol);
-                _c.WriteLn(EntryFile);
+                AnsiConsole.MarkupLine($"{indent}[{tCol}]installs to:[/]");
+                AnsiConsole.MarkupLine($"  {RootInstallPath}");
+                AnsiConsole.MarkupLine($"{indent}[{tCol}]post install command:[/]");
+                AnsiConsole.MarkupLine($"  {PostInstallCmd}");
             }
         }
     }

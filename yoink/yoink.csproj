@@ -13,10 +13,4 @@
     <PackageReference Include="Spectre.Console.ImageSharp" Version="0.53.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="AbysmalCore">
-      <HintPath>..\..\AbysmalCore\AbysmalCore\bin\Debug\net8.0\AbysmalCore.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

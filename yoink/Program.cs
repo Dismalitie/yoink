@@ -1,41 +1,33 @@
-﻿using AbysmalCore.Console;
-using AbysmalCore.Debugging;
-using yoink;
+﻿using Spectre.Console;
 
 internal class Program
 {
-    public static AbysmalConsole _c = AbysmalDebug.Console;
-
     private static void Main(string[] args)
     {
-        AbysmalDebug.Enabled = false;
-
 #if DEBUG
         args = ["grab", "yoink.tests.dummy1 -l:C"];
 #endif
 
         if (args.Length < 2)
         {
-            _c.WriteColorLn("usage: ", ConsoleColor.Yellow);
-            _c.WriteColors([
-                ("  yoink", ConsoleColor.Blue, null),
-                (" <grab | drop | up | help> <package | command>", ConsoleColor.White, null)
-            ]); _c.WriteLn();
+            AnsiConsole.MarkupLine("[yellow]usage:[/]");
+            AnsiConsole.MarkupLine("[blue]yoink[/] <grab|up|drop|help> <package|command> [gray][[...]][/]");
 
-            _c.WriteLn();
+            AnsiConsole.MarkupLine("[yellow]commands:[/]");
+            AnsiConsole.MarkupLine("  [green]grab[/] [gray]<package>[/]    gets a package");
+            AnsiConsole.MarkupLine("  [red]drop[/] [gray]<package>[/]    uninstalls a package");
+            AnsiConsole.MarkupLine("  [blue]up[/] [gray][[package]][/]    updates a package");
+            AnsiConsole.MarkupLine("  [magenta]help[/] [gray][[command]][/]    tells you what different commands do");
 
-            _c.WriteColorLn("commands: ", ConsoleColor.Yellow);
-            _c.WriteColorLns([
-                ("  grab    gets a package", ConsoleColor.Green, null),
-                ("  drop    uninstalls a package", ConsoleColor.Red, null),
-                ("  up      updates a package", ConsoleColor.Blue, null),
-                ("  help    tells you what yoink does", ConsoleColor.Magenta, null),
-            ]); _c.WriteLn();
+            AnsiConsole.MarkupLine("[yellow]commands:[/]");
+            AnsiConsole.MarkupLine("  -q | -quiet    installs the package with minimal prompting and display (use flags to minimize)");
+            AnsiConsole.MarkupLine("  -l:<dir> | -location:<dir>    sets the install location");
+            AnsiConsole.MarkupLine("  -v:<*.*.*> | -version:<*.*.*>    installs a specific version of a package");
 
             return;
         }
 
-        args = args.Select(a => a.Contains("yoink.tests.dummy1") ? "https://dummyjson.com/c/0d09-2e89-4469-89fa" : a).ToArray();
+        args = args.Select(a => a.Contains("yoink.tests.dummy1") ? "https://dummyjson.com/c/cec4-6996-4bb4-878d" : a).ToArray();
 
         switch (args[0])
         {
